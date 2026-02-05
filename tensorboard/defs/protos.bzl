@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@com_google_protobuf//:protobuf.bzl", "proto_gen")
-load("@rules_python//python:py_library.bzl", "py_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@com_google_protobuf//bazel:py_proto_library.bzl", "py_proto_library")
+load("@com_github_grpc_grpc//bazel:python_rules.bzl", "py_grpc_library")
 
 # TODO(#6185): try to reduce the complexity in this rule.
 def tb_proto_library(
@@ -25,66 +26,34 @@ def tb_proto_library(
         has_services = False,
         # The `exports` arg is unused here, but required internally for compatibility.
         exports = []):
-    outs_proto = _PyOuts(srcs, grpc = False)
-    outs_grpc = _PyOuts(srcs, grpc = True) if has_services else []
-    outs_all = outs_proto + outs_grpc
+    # Some targets might include the _proto suffix and some might not.
+    # This naming just attempts to avoid any naming clashes, for the sake of
+    # clarity.
+    # The proto library is generally not referenced outside of this method.
+    name_proto = name + "_proto_internal"
 
-    # Dependencies we need to operate protoc (the protobuf compiler), including
-    # protoc itself, the intermediate generated proto output from the runtime
-    # bundled with protoc (to provide proto types used during the protoc code
-    # generation process itself), and the grpc plugin to protoc used for gRPC
-    # service generation.
-    protoc = "@com_google_protobuf//:protoc"
-    protoc_runtime_genproto = "@com_google_protobuf//:protobuf_python_genproto"
-    grpc_python_plugin = "//external:grpc_python_plugin"
+    # These are the targets that are expected by TB code when protos are built
+    # using this function.
+    name_py_pb2 = name + "_py_pb2"
+    name_grpc = name_py_pb2 + "_grpc"
 
-    # Python generated code relies on a Python protobuf runtime to be present.
-    # The runtime version must be compatible (typically, >=) with the protoc
-    # that was used to generate the code. There is a runtime provided along
-    # with protoc as part of our build-time dependency on protobuf (the target
-    # is "@com_google_protobuf//:protobuf_python"), but we deliberately don't
-    # use it, because our tests may need to use a protobuf runtime that is
-    # higher than our protoc version in order to be compatible with generated
-    # protobuf code used by our dependencies (namely, TensorFlow). Instead, we
-    # rely on picking up protobuf ambiently from the virtual environment, the
-    # same way that it will behave when released in our pip package.
-    runtime = "//tensorboard:expect_protobuf_installed"
-
-    proto_gen(
-        name = name + "_genproto",
+    proto_library(
+        name = name_proto,
         srcs = srcs,
-        deps = [s + "_genproto" for s in deps] + [protoc_runtime_genproto],
-        includes = [],
-        protoc = protoc,
-        gen_py = True,
-        outs = outs_all,
-        visibility = ["//visibility:public"],
-        plugin = grpc_python_plugin if has_services else None,
-        plugin_language = "grpc",
+        deps = deps,
+        visibility = visibility,
+        testonly = testonly,
     )
 
-    py_deps = [s + "_py_pb2" for s in deps] + [runtime]
-    py_library(
-        name = name + "_py_pb2",
-        srcs = outs_proto,
-        imports = [],
-        srcs_version = "PY3",
-        deps = py_deps,
-        testonly = testonly,
-        visibility = visibility,
+    py_proto_library(
+        name = name_py_pb2,
+        deps = [":" + name_proto],
     )
+
     if has_services:
-        py_library(
-            name = name + "_py_pb2_grpc",
-            srcs = outs_grpc,
-            imports = [],
-            srcs_version = "PY3",
-            deps = [name + "_py_pb2"] + py_deps,
-            testonly = testonly,
-            visibility = visibility,
+        py_grpc_library(
+            name = name_grpc,
+            srcs = [":" + name_proto],
+            deps = [":" + name_py_pb2],
         )
 
-def _PyOuts(srcs, grpc):
-    # Adapted from @com_google_protobuf//:protobuf.bzl.
-    ext = "_pb2.py" if not grpc else "_pb2_grpc.py"
-    return [s[:-len(".proto")] + ext for s in srcs]

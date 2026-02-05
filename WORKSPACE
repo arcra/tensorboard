@@ -18,55 +18,103 @@ versions.check(
     # Preemptively assume the next Bazel major version will break us, since historically they do,
     # and provide a clean error message in that case. Since the maximum version is inclusive rather
     # than exclusive, we set it to the 999th patch release of the current major version.
-    maximum_bazel_version = "6.999.0",
+    maximum_bazel_version = "7.999.0",
     # Keep this version in sync with:
     #  * The BAZEL environment variable defined in .github/workflows/ci.yml, which is used for CI and nightly builds.
-    minimum_bazel_version = "6.5.0",
+    minimum_bazel_version = "7.0.0",
 )
 
 http_archive(
     name = "io_bazel_rules_webtesting",
-    sha256 = "6e104e54c283c94ae3d5c6573cf3233ce478e89e0f541a869057521966a35b8f",
-    strip_prefix = "rules_webtesting-b6fc79c5a37cd18a5433fd080c9d2cc59548222c",
-    urls = ["https://github.com/bazelbuild/rules_webtesting/archive/b6fc79c5a37cd18a5433fd080c9d2cc59548222c.tar.gz"],
+    sha256 = "574f1c0aa072c187194d60beda7f5be15e139a5e0096089a7710818eec3a4f62",
+#    sha256 = "c43000ab2d07cd66afb5bd53826682233b6a18fd9ea21a2833892685c65fd6e5",
+    strip_prefix = "rules_webtesting-0.4.1",
+#    strip_prefix = "rules_webtesting-b1057c8362ede4eaeda50b366d6757b7256e9a08",
+    urls = [
+        "https://github.com/bazelbuild/rules_webtesting/releases/download/0.4.1/rules_webtesting-0.4.1.tar.gz",
+#        "https://github.com/bazelbuild/rules_webtesting/archive/b1057c8362ede4eaeda50b366d6757b7256e9a08.tar.gz",
+    ],
 )
 
-load("@io_bazel_rules_webtesting//web:repositories.bzl", "web_test_repositories")
+#load("@io_bazel_rules_webtesting//web:repositories.bzl", "web_test_repositories")
 
-web_test_repositories(omit_bazel_skylib = True)
+#web_test_repositories(omit_bazel_skylib = True)
+
+#load("@io_bazel_rules_webtesting://web/versioned:browsers-0.3.4.bzl", "browser_repositories")
+#browser_repositories(chromium = True)
+
 
 # rules_python has to be placed before load("@io_bazel_rules_closure//closure:repositories.bzl")
 # in the dependencies list, otherwise we get "cannot load '@rules_python//python:py_xxx.bzl': no such file"
+
+# rules_java: REQUIRED for Protobuf 6.30+ and Bazel 7
+http_archive(
+    name = "rules_java",
+    urls = [
+        "https://github.com/bazelbuild/rules_java/releases/download/7.12.0/rules_java-7.12.0.tar.gz",
+    ],
+    sha256 = "c999cdbb4e8414d49c4117bb73800cff95c438c15da075531ae004275ab23144",
+)
+load("@rules_java//java:repositories.bzl", "rules_java_dependencies", "rules_java_toolchains")
+rules_java_dependencies()
+rules_java_toolchains()
+
+# rules_cc: REQUIRED for Protobuf C++ compilation
+http_archive(
+    name = "rules_cc",
+    strip_prefix = "rules_cc-0.0.17",
+    urls = [
+        "https://github.com/bazelbuild/rules_cc/releases/download/0.0.17/rules_cc-0.0.17.tar.gz",
+    ],
+    sha256 = "abc605dd850f813bb37004b77db20106a19311a96b2da1c92b789da529d28fe1",
+)
+load("@rules_cc//cc:repositories.bzl", "rules_cc_dependencies", "rules_cc_toolchains")
+rules_cc_dependencies()
+rules_cc_toolchains()
+
+# rules_python: REQUIRED for py_proto_library
 http_archive(
     name = "rules_python",
-    sha256 = "0a8003b044294d7840ac7d9d73eef05d6ceb682d7516781a4ec62eeb34702578",
-    strip_prefix = "rules_python-0.24.0",
+    strip_prefix = "rules_python-0.36.0",
     urls = [
-        "http://mirror.tensorflow.org/github.com/bazelbuild/rules_python/releases/download/0.24.0/rules_python-0.24.0.tar.gz",
-        "https://github.com/bazelbuild/rules_python/releases/download/0.24.0/rules_python-0.24.0.tar.gz",  # 2023-07-11
+        "https://github.com/bazelbuild/rules_python/releases/download/0.36.0/rules_python-0.36.0.tar.gz",
     ],
+    sha256 = "ca77768989a7f311186a29747e3e95c936a41dffac779aff6b443db22290d913",
 )
-
-load("@io_bazel_rules_webtesting//web:py_repositories.bzl", "py_repositories")
-
+load("@rules_python//python:repositories.bzl", "py_repositories")
 py_repositories()
+
+# http_archive(
+#     name = "rules_python",
+#     sha256 = "0a8003b044294d7840ac7d9d73eef05d6ceb682d7516781a4ec62eeb34702578",
+#     strip_prefix = "rules_python-0.24.0",
+#     urls = [
+#         "http://mirror.tensorflow.org/github.com/bazelbuild/rules_python/releases/download/0.24.0/rules_python-0.24.0.tar.gz",
+#         "https://github.com/bazelbuild/rules_python/releases/download/0.24.0/rules_python-0.24.0.tar.gz",  # 2023-07-11
+#     ],
+# )
+# 
+# load("@io_bazel_rules_webtesting//web:py_repositories.bzl", "py_repositories")
+# 
+# py_repositories()
 
 http_archive(
     name = "io_bazel_rules_closure",
-    sha256 = "ae060075a7c468eee42e6a08ddbb83f5a6663bdfdbd461261a465f4a3ae8598c",
-    strip_prefix = "rules_closure-7f3d3351a8cc31fbaa403de7d35578683c17b447",
+    sha256 = "38c3b21ea0dcf79bbc22d75f36fa57fb53ef2bf5f75e47f8b76af02c4a2abc1b",
+    strip_prefix = "rules_closure-0.15.0",
     urls = [
-        "https://github.com/bazelbuild/rules_closure/archive/7f3d3351a8cc31fbaa403de7d35578683c17b447.tar.gz",  # 2024-03-11
+        "https://github.com/bazelbuild/rules_closure/releases/download/0.15.0/rules_closure-0.15.0.tar.gz",
+#        "https://github.com/bazelbuild/rules_closure/archive/7f3d3351a8cc31fbaa403de7d35578683c17b447.tar.gz",  # 2024-03-11
     ],
 )
 
-load("@io_bazel_rules_closure//closure:repositories.bzl", "rules_closure_dependencies")
+#load("@io_bazel_rules_closure//closure:repositories.bzl", "rules_closure_dependencies")
 
-rules_closure_dependencies(
-    omit_bazel_skylib = True,
-    omit_com_google_protobuf = True,
-    omit_com_google_protobuf_js = True,
-)
+# rules_closure_dependencies(
+#     omit_bazel_skylib = True,
+#     omit_com_google_protobuf = True,
+#     omit_com_google_protobuf_js = True,
+# )
 
 http_archive(
     name = "build_bazel_rules_nodejs",
@@ -133,65 +181,75 @@ sass_repositories()
 # high as the version of protobuf we depend on below, and we cannot increase the
 # version below without bumping the requirements.txt version.
 #
-# TODO(#6185): Remove the TODO below once the TF constraint no longer applies.
-#
-# NOTE: This dependency currently cannot be advanced past 3.19.x. This is because
-# TF is currently unable to use a runtime any greater than 3.19.x, see details here:
-# https://github.com/tensorflow/tensorflow/blob/9d22f4a0a9499c8e10a4312503e63e0da35ccd94/tensorflow/tools/pip_package/setup.py#L100-L107
-#
-# As a result of TF's constraint and the above <= requirement, 3.19.x is the most recent
-# possible protoc we can use while remaining cross-compatible with TF. At the same time,
-# 3.19.x is the minimum possible protoc that will generate compiled proto code that *is*
-# compatible with protobuf runtimes >= 4, as discussed here:
-# https://developers.google.com/protocol-buffers/docs/news/2022-05-06
+# We try to use the lowest "minor" version compatible with the version used by
+# the TF release. It should also match the version used in the grpc dep below.
 http_archive(
     name = "com_google_protobuf",
-    sha256 = "9a301cf94a8ddcb380b901e7aac852780b826595075577bb967004050c835056",
-    strip_prefix = "protobuf-3.19.6",
+    sha256 = "fb06709acc393cc36f87c251bb28a5500a2e12936d4346099f2c6240f6c7a941",
+    strip_prefix = "protobuf-30.2",
     urls = [
-        "http://mirror.tensorflow.org/github.com/protocolbuffers/protobuf/archive/v3.19.6.tar.gz",
-        "https://github.com/protocolbuffers/protobuf/archive/v3.19.6.tar.gz",  # 2022-09-29
+        "https://github.com/protocolbuffers/protobuf/releases/download/v30.2/protobuf-30.2.tar.gz",
     ],
 )
+
+load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
+
+protobuf_deps()
+
+# rules_java is required by grpc package below:
+# http_archive(
+#     name = "rules_java",
+#     urls = ["https://github.com/bazelbuild/rules_java/releases/download/7.12.0/rules_java-7.12.0.tar.gz"],
+#     sha256 = "6ea2b8797b539a6741498c807b5a10972688f4b005f2351717887d1df18889b7",
+# )
+# load("@rules_java//java:repositories.bzl", "rules_java_dependencies", "rules_java_toolchains")
+# rules_java_dependencies()
+# rules_java_toolchains()
 
 # gRPC.
 #
 # NOTE: The version used here must be cross-compatible with our protobuf version.
-# As 2023-01-13, 1.48.2 is the most recent gRPC release that was still using a 3.19.x
-# version of protobuf in its own builds (more recent releases move to 3.21.x).
+# Version 1.73.1 is the most recent release that requires the lowest
+# protobuf 6.x minor version (which the TF release will use as dependency).
 http_archive(
     name = "com_github_grpc_grpc",
-    sha256 = "bdb8e98145469d58c69ab9f2c9e0bd838c2836a99b5760bc0ebf658623768f52",
-    strip_prefix = "grpc-1.48.2",
+    sha256 = "e11fd9b963c617de53d08a84f41359164b123f2e8e4180644706688fc9de43d9",
+    strip_prefix = "grpc-1.73.1",
     urls = [
-        "http://mirror.tensorflow.org/github.com/grpc/grpc/archive/v1.48.2.tar.gz",
-        "https://github.com/grpc/grpc/archive/v1.48.2.tar.gz",  # 2022-09-21
+        "https://github.com/grpc/grpc/archive/refs/tags/v1.73.1.tar.gz",
     ],
 )
 
 load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", "grpc_deps")
-
 grpc_deps()
 
-load("@com_github_grpc_grpc//bazel:grpc_extra_deps.bzl", "grpc_extra_deps")
+# load("@com_github_grpc_grpc//bazel:grpc_extra_deps.bzl", "grpc_extra_deps")
+# grpc_extra_deps()
 
-grpc_extra_deps()
+load("@com_github_grpc_grpc//bazel:grpc_python_deps.bzl", "grpc_python_deps")
+grpc_python_deps()
 
 http_archive(
     name = "rules_rust",
-    sha256 = "08109dccfa5bbf674ff4dba82b15d40d85b07436b02e62ab27e0b894f45bb4a3",
-    strip_prefix = "rules_rust-d5ab4143245af8b33d1947813d411a6cae838409",
-    urls = [
-        # Master branch as of 2022-01-31
-        "http://mirror.tensorflow.org/github.com/bazelbuild/rules_rust/archive/d5ab4143245af8b33d1947813d411a6cae838409.tar.gz",
-        "https://github.com/bazelbuild/rules_rust/archive/d5ab4143245af8b33d1947813d411a6cae838409.tar.gz",
-    ],
+    integrity = "sha256-yKqAbPYGZnmsI0YyQe6ArWkiZdrQRl9RERy74wuJA1I=",
+    urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.68.1/rules_rust-0.68.1.tar.gz"],
 )
 
-# WORKAROUND for rules_webtesting not declaring used com_github_gorilla_mux repo:
-load("@io_bazel_rules_webtesting//web:go_repositories.bzl", "com_github_gorilla_mux")
+# http_archive(
+#     name = "rules_rust",
+#     sha256 = "08109dccfa5bbf674ff4dba82b15d40d85b07436b02e62ab27e0b894f45bb4a3",
+#     strip_prefix = "rules_rust-d5ab4143245af8b33d1947813d411a6cae838409",
+#     urls = [
+#         # Master branch as of 2022-01-31
+#         "http://mirror.tensorflow.org/github.com/bazelbuild/rules_rust/archive/d5ab4143245af8b33d1947813d411a6cae838409.tar.gz",
+#         "https://github.com/bazelbuild/rules_rust/archive/d5ab4143245af8b33d1947813d411a6cae838409.tar.gz",
+#     ],
+# )
 
-com_github_gorilla_mux()
+# WORKAROUND for rules_webtesting not declaring used com_github_gorilla_mux repo:
+#load("@io_bazel_rules_webtesting//web:go_repositories.bzl", "com_github_gorilla_mux")
+
+#com_github_gorilla_mux()
 
 # Please add all new dependencies in workspace.bzl.
 load("//third_party:workspace.bzl", "tensorboard_workspace")

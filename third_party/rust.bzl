@@ -22,5 +22,5 @@ load("//third_party/rust:crates.bzl", "raze_fetch_remote_crates")
 def tensorboard_rust_workspace():
     """TensorBoard Rust dependencies."""
     rules_rust_dependencies()
-    rust_register_toolchains(version = "1.65.0")
+    rust_register_toolchains(versions = ["1.65.0"])
     raze_fetch_remote_crates()
