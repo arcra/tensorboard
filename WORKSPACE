@@ -26,28 +26,35 @@ versions.check(
 
 http_archive(
     name = "io_bazel_rules_webtesting",
-    sha256 = "574f1c0aa072c187194d60beda7f5be15e139a5e0096089a7710818eec3a4f62",
-#    sha256 = "c43000ab2d07cd66afb5bd53826682233b6a18fd9ea21a2833892685c65fd6e5",
-    strip_prefix = "rules_webtesting-0.4.1",
-#    strip_prefix = "rules_webtesting-b1057c8362ede4eaeda50b366d6757b7256e9a08",
+    sha256 = "85b773786b161507364e89d36205028dc3e513599cb888089152cf5827e1334f",
+    # This is a snapshot of the code at this particular commit, which is after the fix from PR#469
+    # and before updating the code to work only with bazel modules in PR#478
+    # (This is the commit right before this last one, to be precise.)
+    #
+    # PR#469: https://github.com/bazelbuild/rules_webtesting/pull/469
+    # PR#478: https://github.com/bazelbuild/rules_webtesting/pull/478
+    #
+    # The releases 0.3.5 is before both of these, and the next release, 0.4.0 is after both of them.
+    # We should update this to a new way to integrate with karma tests.
+    # Gemini suggested using Bazel modules with puppeteer, but we'll need to look into it more.
+    strip_prefix = "rules_webtesting-d8208bddac1e44b3327430cc422f952b3244536a",
     urls = [
-        "https://github.com/bazelbuild/rules_webtesting/releases/download/0.4.1/rules_webtesting-0.4.1.tar.gz",
-#        "https://github.com/bazelbuild/rules_webtesting/archive/b1057c8362ede4eaeda50b366d6757b7256e9a08.tar.gz",
+        "https://github.com/bazelbuild/rules_webtesting/archive/d8208bddac1e44b3327430cc422f952b3244536a.tar.gz",
     ],
 )
 
-#load("@io_bazel_rules_webtesting//web:repositories.bzl", "web_test_repositories")
+load("@io_bazel_rules_webtesting//web:repositories.bzl", "web_test_repositories")
 
-#web_test_repositories(omit_bazel_skylib = True)
+web_test_repositories(omit_bazel_skylib = True)
 
-#load("@io_bazel_rules_webtesting://web/versioned:browsers-0.3.4.bzl", "browser_repositories")
-#browser_repositories(chromium = True)
+# These are common dependencies that are required by others below.
+#
+# In particular, rules_java seemed to be required by the grpc package.
+#
+# Also at some point there was an issue where rules_python had to be placed before
+# load("@io_bazel_rules_closure//closure:repositories.bzl") in the dependencies list,
+# otherwise we'd get "cannot load '@rules_python//python:py_xxx.bzl': no such file" errors.
 
-
-# rules_python has to be placed before load("@io_bazel_rules_closure//closure:repositories.bzl")
-# in the dependencies list, otherwise we get "cannot load '@rules_python//python:py_xxx.bzl': no such file"
-
-# rules_java: REQUIRED for Protobuf 6.30+ and Bazel 7
 http_archive(
     name = "rules_java",
     urls = [
@@ -59,7 +66,6 @@ load("@rules_java//java:repositories.bzl", "rules_java_dependencies", "rules_jav
 rules_java_dependencies()
 rules_java_toolchains()
 
-# rules_cc: REQUIRED for Protobuf C++ compilation
 http_archive(
     name = "rules_cc",
     strip_prefix = "rules_cc-0.0.17",
@@ -72,7 +78,6 @@ load("@rules_cc//cc:repositories.bzl", "rules_cc_dependencies", "rules_cc_toolch
 rules_cc_dependencies()
 rules_cc_toolchains()
 
-# rules_python: REQUIRED for py_proto_library
 http_archive(
     name = "rules_python",
     strip_prefix = "rules_python-0.36.0",
@@ -84,37 +89,14 @@ http_archive(
 load("@rules_python//python:repositories.bzl", "py_repositories")
 py_repositories()
 
-# http_archive(
-#     name = "rules_python",
-#     sha256 = "0a8003b044294d7840ac7d9d73eef05d6ceb682d7516781a4ec62eeb34702578",
-#     strip_prefix = "rules_python-0.24.0",
-#     urls = [
-#         "http://mirror.tensorflow.org/github.com/bazelbuild/rules_python/releases/download/0.24.0/rules_python-0.24.0.tar.gz",
-#         "https://github.com/bazelbuild/rules_python/releases/download/0.24.0/rules_python-0.24.0.tar.gz",  # 2023-07-11
-#     ],
-# )
-# 
-# load("@io_bazel_rules_webtesting//web:py_repositories.bzl", "py_repositories")
-# 
-# py_repositories()
-
 http_archive(
     name = "io_bazel_rules_closure",
     sha256 = "38c3b21ea0dcf79bbc22d75f36fa57fb53ef2bf5f75e47f8b76af02c4a2abc1b",
     strip_prefix = "rules_closure-0.15.0",
     urls = [
         "https://github.com/bazelbuild/rules_closure/releases/download/0.15.0/rules_closure-0.15.0.tar.gz",
-#        "https://github.com/bazelbuild/rules_closure/archive/7f3d3351a8cc31fbaa403de7d35578683c17b447.tar.gz",  # 2024-03-11
     ],
 )
-
-#load("@io_bazel_rules_closure//closure:repositories.bzl", "rules_closure_dependencies")
-
-# rules_closure_dependencies(
-#     omit_bazel_skylib = True,
-#     omit_com_google_protobuf = True,
-#     omit_com_google_protobuf_js = True,
-# )
 
 http_archive(
     name = "build_bazel_rules_nodejs",
@@ -196,35 +178,32 @@ load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 
 protobuf_deps()
 
-# rules_java is required by grpc package below:
-# http_archive(
-#     name = "rules_java",
-#     urls = ["https://github.com/bazelbuild/rules_java/releases/download/7.12.0/rules_java-7.12.0.tar.gz"],
-#     sha256 = "6ea2b8797b539a6741498c807b5a10972688f4b005f2351717887d1df18889b7",
-# )
-# load("@rules_java//java:repositories.bzl", "rules_java_dependencies", "rules_java_toolchains")
-# rules_java_dependencies()
-# rules_java_toolchains()
-
 # gRPC.
 #
 # NOTE: The version used here must be cross-compatible with our protobuf version.
-# Version 1.73.1 is the most recent release that requires the lowest
-# protobuf 6.x minor version (which the TF release will use as dependency).
+# Version 1.72.x is the most recent release that requires the lowest
+# protobuf 6.x minor version (TF 2.21 uses a version of protobuf in the 6.x range).
+#
+# Release notes for protobuf note that v30 has breaking changes for python:
+# https://github.com/protocolbuffers/protobuf/releases/tag/v30.0
+#
+# The release charts here, also shows that 6.30 is the first 6.x release for python:
+# https://protobuf.dev/support/version-support/#python
+#
+# On the other hand, grpc release 1.72.x is the first one who upgraded the protobuf
+# depenrency to 30+:
+# https://github.com/grpc/grpc/blob/d6b42b2fd3e522a60318c7e2f2021219c6b5c470/bazel/grpc_deps.bzl#L64
 http_archive(
     name = "com_github_grpc_grpc",
-    sha256 = "e11fd9b963c617de53d08a84f41359164b123f2e8e4180644706688fc9de43d9",
-    strip_prefix = "grpc-1.73.1",
+    sha256 = "ae14a0de222485fd6e3baf52028c74acbd9ad8d685c813580401d3832cfae9f1",
+    strip_prefix = "grpc-1.72.2",
     urls = [
-        "https://github.com/grpc/grpc/archive/refs/tags/v1.73.1.tar.gz",
+        "https://github.com/grpc/grpc/archive/refs/tags/v1.72.2.tar.gz",
     ],
 )
 
 load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", "grpc_deps")
 grpc_deps()
-
-# load("@com_github_grpc_grpc//bazel:grpc_extra_deps.bzl", "grpc_extra_deps")
-# grpc_extra_deps()
 
 load("@com_github_grpc_grpc//bazel:grpc_python_deps.bzl", "grpc_python_deps")
 grpc_python_deps()
@@ -234,22 +213,6 @@ http_archive(
     integrity = "sha256-yKqAbPYGZnmsI0YyQe6ArWkiZdrQRl9RERy74wuJA1I=",
     urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.68.1/rules_rust-0.68.1.tar.gz"],
 )
-
-# http_archive(
-#     name = "rules_rust",
-#     sha256 = "08109dccfa5bbf674ff4dba82b15d40d85b07436b02e62ab27e0b894f45bb4a3",
-#     strip_prefix = "rules_rust-d5ab4143245af8b33d1947813d411a6cae838409",
-#     urls = [
-#         # Master branch as of 2022-01-31
-#         "http://mirror.tensorflow.org/github.com/bazelbuild/rules_rust/archive/d5ab4143245af8b33d1947813d411a6cae838409.tar.gz",
-#         "https://github.com/bazelbuild/rules_rust/archive/d5ab4143245af8b33d1947813d411a6cae838409.tar.gz",
-#     ],
-# )
-
-# WORKAROUND for rules_webtesting not declaring used com_github_gorilla_mux repo:
-#load("@io_bazel_rules_webtesting//web:go_repositories.bzl", "com_github_gorilla_mux")
-
-#com_github_gorilla_mux()
 
 # Please add all new dependencies in workspace.bzl.
 load("//third_party:workspace.bzl", "tensorboard_workspace")

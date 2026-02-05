@@ -1,4 +1,4 @@
-load("@io_bazel_rules_webtesting//:web_testing_python/web/py.bzl", "py_web_test_suite")
+load("@io_bazel_rules_webtesting//web:py.bzl", "py_web_test_suite")
 
 package(default_visibility = ["//tensorboard:internal"])
 
